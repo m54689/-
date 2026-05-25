@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Panel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --border: #222222;
+    --green: #00ff88;
+    --red: #ff3355;
+    --yellow: #ffcc00;
+    --text: #cccccc;
+    --dim: #555555;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* מסך נעילה */
+  #lockScreen {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 320px;
+    overflow: hidden;
+  }
+
+  #lockScreen .lock-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--dim);
+    text-align: center;
+  }
+
+  #lockScreen .lock-body {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .lock-icon { font-size: 32px; }
+
+  #lockScreen input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #lockScreen input:focus { border-color: var(--green); }
+  #lockScreen input.shake {
+    animation: shake 0.3s;
+    border-color: var(--red);
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .lock-err { font-size: 11px; color: var(--red); min-height: 16px; }
+
+  .btn-unlock {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--green);
+    border-radius: 3px;
+    color: var(--green);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .btn-unlock:hover { background: var(--green); color: var(--bg); }
+
+  .remember-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .remember-row input[type=checkbox] {
+    width: 14px; height: 14px;
+    accent-color: var(--green);
+    cursor: pointer;
+    letter-spacing: 0;
+  }
+
+  /* פאנל ראשי */
+  #mainPanel { display: none; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.red { background: var(--red); }
+  .dot.yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+
+  .panel-title { font-size: 11px; color: var(--dim); margin-right: auto; }
+
+  .lock-btn {
+    background: none;
+    border: none;
+    color: var(--dim);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .lock-btn:hover { color: var(--red); }
+
+  .panel-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  .field select option { background: var(--panel); }
+
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  button {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-start { background: transparent; color: var(--green); border-color: var(--green); }
+  .btn-start:hover { background: var(--green); color: var(--bg); }
+  .btn-stop { background: transparent; color: var(--red); border-color: var(--red); }
+  .btn-stop:hover { background: var(--red); color: #fff; }
+  .btn-status { background: transparent; color: var(--dim); border-color: var(--border); }
+  .btn-status:hover { color: var(--text); border-color: var(--text); }
+  .btn-logs { background: transparent; color: var(--yellow); border-color: var(--yellow); }
+  .btn-logs:hover { background: var(--yellow); color: var(--bg); }
+
+  .status-bar {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--dim);
+    min-height: 40px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .status-bar.ok { color: var(--green); }
+  .status-bar.err { color: var(--red); }
+  .status-bar.info { color: var(--yellow); }
+
+  .logs-panel { display: none; flex-direction: column; gap: 8px; }
+  .logs-panel.visible { display: flex; }
+
+  .logs-header {
+    font-size: 10px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 1px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .logs-refresh {
+    background: none; border: none; color: var(--dim);
+    cursor: pointer; font-size: 12px; padding: 2px 6px;
+    text-transform: none; letter-spacing: 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .logs-refresh:hover { color: var(--text); }
+
+  .logs-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px;
+    font-size: 10px;
+    height: 220px;
+    overflow-y: auto;
+    line-height: 1.7;
+    color: var(--dim);
+    white-space: pre-wrap;
+    word-break: break-all;
+    direction: ltr;
+    text-align: left;
+  }
+  .logs-box::-webkit-scrollbar { width: 4px; }
+  .logs-box::-webkit-scrollbar-track { background: var(--bg); }
+  .logs-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<!-- מסך נעילה -->
+<div id="lockScreen">
+  <div class="lock-header">control panel v1</div>
+  <div class="lock-body">
+    <div class="lock-icon">🔒</div>
+    <input type="password" id="passInput" placeholder="קוד גישה" maxlength="20"
+           onkeydown="if(event.key==='Enter') unlock()" />
+    <div class="lock-err" id="lockErr"></div>
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMe" /> זכור אותי במכשיר זה
+    </label>
+    <button class="btn-unlock" onclick="unlock()">כניסה</button>
+  </div>
+</div>
+
+<!-- פאנל ראשי -->
+<div id="mainPanel">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot" id="statusDot"></div>
+      <span class="panel-title">control panel v1</span>
+      <button class="lock-btn" onclick="lockPanel()" title="נעל">🔒</button>
+    </div>
+    <div class="panel-body">
+
+      <div class="field">
+        <label>GitHub Token</label>
+        <input type="password" id="token" placeholder="ghp_..." value="YOUR_TOKEN_HERE" />
+      </div>
+
+      <div class="field">
+        <label>ריפו (URL או user/repo)</label>
+        <input type="text" id="repo" placeholder="https://github.com/user/repo/" value="Moshefrie/BB" />
+      </div>
+
+      <div class="field">
+        <label>סביבה</label>
+        <select id="mode">
+          <option value="desktop">desktop</option>
+          <option value="android">android</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>קוד חיבור (CRD)</label>
+        <input type="text" id="crd_code" placeholder="הדבק את הקוד מגוגל..." />
+      </div>
+
+      <div class="buttons">
+        <button class="btn-start" onclick="startRun()">▶ הפעל</button>
+        <button class="btn-stop" onclick="stopRun()">■ עצור</button>
+        <button class="btn-status" onclick="getStatus()">↻ סטטוס</button>
+        <button class="btn-logs" onclick="toggleLogs()">📋 לוגים</button>
+      </div>
+
+      <div class="status-bar" id="log">ממתין לפעולה...</div>
+
+      <div class="logs-panel" id="logsPanel">
+        <div class="logs-header">
+          <span>לוגים — ריצה אחרונה</span>
+          <button class="logs-refresh" onclick="loadLogs()">↻ רענן</button>
+        </div>
+        <div class="logs-box" id="logsBox">טוען...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============ הגדרות ============
+  const PASSWORD = "345148";
+  const WORKFLOW = "Start.yml";
+  // ================================
+
+  let logsVisible = false;
+  let logsInterval = null;
+
+  // בדוק אם יש זיכרון שמור
+  window.onload = () => {
+    const saved = localStorage.getItem('cp_auth');
+    if (saved === btoa(PASSWORD)) showMain();
+  };
+
+  function unlock() {
+    const val = document.getElementById('passInput').value;
+    const err = document.getElementById('lockErr');
+    const inp = document.getElementById('passInput');
+    if (val === PASSWORD) {
+      if (document.getElementById('rememberMe').checked) {
+        localStorage.setItem('cp_auth', btoa(PASSWORD));
+      }
+      showMain();
+    } else {
+      err.textContent = 'קוד שגוי';
+      inp.classList.add('shake');
+      inp.value = '';
+      setTimeout(() => inp.classList.remove('shake'), 400);
+    }
+  }
+
+  function showMain() {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('mainPanel').style.display = 'block';
+  }
+
+  function lockPanel() {
+    localStorage.removeItem('cp_auth');
+    document.getElementById('lockScreen').style.display = 'flex';
+    document.getElementById('mainPanel').style.display = 'none';
+    document.getElementById('passInput').value = '';
+    document.getElementById('lockErr').textContent = '';
+  }
+
+  function getToken() { return document.getElementById('token').value.trim(); }
+
+  function getRepo() {
+    let r = document.getElementById('repo').value.trim();
+    const match = r.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    if (match) r = match[1].replace(/\/$/, '');
+    return r;
+  }
+
+  function setLog(msg, type='') {
+    const el = document.getElementById('log');
+    el.textContent = msg;
+    el.className = 'status-bar ' + type;
+  }
+
+  function setDot(color) {
+    document.getElementById('statusDot').className = 'dot ' + color;
+  }
+
+  async function startRun() {
+    const token = getToken(), repo = getRepo();
+    const mode = document.getElementById('mode').value;
+    const code = document.getElementById('crd_code').value.trim();
+    if (!token) { setLog('חסר טוקן!', 'err'); return; }
+    if (!repo)  { setLog('חסר ריפו!', 'err'); return; }
+    setLog('מפעיל...', 'info'); setDot('yellow');
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW}/dispatches`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main', inputs: { mode, crd_code: code } })
+      });
+      if (res.status === 204) { setLog('✓ הופעל! בדוק סטטוס בעוד כמה שניות.', 'ok'); setDot('green'); }
+      else { const e = await res.json(); setLog('שגיאה: ' + (e.message || res.status), 'err'); setDot('red'); }
+    } catch(e) { setLog('שגיאת רשת: ' + e.message, 'err'); setDot('red'); }
+  }
+
+  async function stopRun() {
+    const token = getToken(), repo = getRepo();
+    if (!token) { setLog('חסר טוקן!', 'err'); return; }
+    setLog('מחפש ריצה פעילה...', 'info');
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}/actions/runs?status=in_progress`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      const data = await res.json();
+      if (!data.workflow_runs?.length) { setLog('אין ריצה פעילה.', 'info'); setDot(''); return; }
+      const runId = data.workflow_runs[0].id;
+      const cancel = await fetch(`https://api.github.com/repos/${repo}/actions/runs/${runId}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if (cancel.status === 202) { setLog(`✓ עצרתי ריצה #${runId}`, 'ok'); setDot('red'); }
+      else { setLog('לא הצלחתי לעצור.', 'err'); }
+    } catch(e) { setLog('שגיאת רשת: ' + e.message, 'err'); }
+  }
+
+  async function getStatus() {
+    const token = getToken(), repo = getRepo();
+    if (!token) { setLog('חסר טוקן!', 'err'); return; }
+    setLog('בודק...', 'info');
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}/actions/runs?per_page=1`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      const data = await res.json();
+      if (!data.workflow_runs?.length) { setLog('אין ריצות.', 'info'); return; }
+      const run = data.workflow_runs[0];
+      const started = new Date(run.created_at).toLocaleString('he-IL');
+      if (run.status === 'in_progress') {
+        setLog(`● פעיל\nהתחיל: ${started}\nID: ${run.id}`, 'ok'); setDot('green');
+      } else {
+        setLog(`○ לא פעיל\nסטטוס: ${run.status}\nתוצאה: ${run.conclusion || '-'}\nהתחיל: ${started}`, 'info'); setDot('');
+      }
+    } catch(e) { setLog('שגיאת רשת: ' + e.message, 'err'); }
+  }
+
+  async function toggleLogs() {
+    logsVisible = !logsVisible;
+    const panel = document.getElementById('logsPanel');
+    panel.className = 'logs-panel' + (logsVisible ? ' visible' : '');
+    if (logsVisible) {
+      await loadLogs();
+      logsInterval = setInterval(loadLogs, 10000);
+    } else {
+      clearInterval(logsInterval);
+    }
+  }
+
+  async function loadLogs() {
+    const token = getToken(), repo = getRepo();
+    const box = document.getElementById('logsBox');
+    if (!token || !repo) { box.textContent = 'חסר טוקן או ריפו.'; return; }
+    try {
+      const runsRes = await fetch(`https://api.github.com/repos/${repo}/actions/runs?per_page=1`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      const runsData = await runsRes.json();
+      if (!runsData.workflow_runs?.length) { box.textContent = 'אין ריצות.'; return; }
+      const run = runsData.workflow_runs[0];
+      const jobsRes = await fetch(`https://api.github.com/repos/${repo}/actions/runs/${run.id}/jobs`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      const jobsData = await jobsRes.json();
+      let output = `Run #${run.id} — ${run.status}\n`;
+      output += `Started: ${new Date(run.created_at).toLocaleString('he-IL')}\n`;
+      output += '─'.repeat(50) + '\n\n';
+      for (const job of jobsData.jobs || []) {
+        output += `▶ ${job.name} [${job.status}${job.conclusion ? ' / ' + job.conclusion : ''}]\n`;
+        for (const step of job.steps || []) {
+          const icon = step.conclusion === 'success' ? '✓' : step.conclusion === 'failure' ? '✗' : step.status === 'in_progress' ? '◉' : '○';
+          output += `  ${icon} ${step.name}\n`;
+        }
+        output += '\n';
+      }
+      box.textContent = output;
+      box.scrollTop = box.scrollHeight;
+    } catch(e) { box.textContent = 'שגיאה: ' + e.message; }
+  }
+</script>
+</body>
+</html>
